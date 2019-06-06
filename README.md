@@ -1,2 +1,1 @@
-# deepstylecam
-Implementation of "Conditional Fast Style Transfer Network"
+# DeepStyleCam: A Real-Time Style Transfer App on iOS
