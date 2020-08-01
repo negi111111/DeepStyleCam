@@ -43,7 +43,6 @@ struct tensor {
     int h;
     int w;
     int d;
-    
     float *data;
     struct tensor *old;
     struct tensor *old2;
@@ -104,7 +103,7 @@ Ten *unpool(Ten *in)
 inline void relu_bn(float *ptr,int size, float *sc, int sz)
 {
     int kn,sn=-1;
-    
+
     for(kn=0;kn<size;kn++){
         if (kn % sz==0) { sn++; }
         *ptr *= sc[sn];
@@ -120,7 +119,7 @@ inline void relu_bn(float *ptr,int size, float *sc, int sz)
 inline void bn0(float *ptr,int size, float *sc, int sz)
 {
     int kn,sn=-1;
-    
+
     for(kn=0;kn<size;kn++){
         if (kn % sz==0) { sn++; }
         *ptr *= sc[sn];
@@ -137,7 +136,7 @@ inline void relu0(float *ptr,int size)
 {
     float *ptr0=ptr;
     int kn;
-    
+
     if (relu_avg){
         float db=0;  //db2=0,th;
         for(kn=0;kn<size;kn++){
@@ -178,7 +177,7 @@ inline void tanh0(float *ptr,int size)
     //    return;
     for(kn=0;kn<size;kn++)
         *ptr++ = (tanh(*ptr)+1)*127.5;
-    
+
     // [63] Tanh 62
     // [64] _ + 1 63
     // [65] _ * 127.5 64
@@ -240,11 +239,11 @@ void *conv3_thread(void *arg){ // for kernel over 2x2
 #else
     float *fl[a->end_k];
 #endif
-    
+
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,a->end_k-a->start_k,a->w1*a->h1,sss,
                 (float)1.0, a->filter+a->start_k*sss ,sss, im2col_buf, sz, (float)1,
                 a->out->data+a->start_k*sz, sz);
-    
+
     if (a->bn && a->relu){
         relu_bn(a->out->data + sz * a->start_k, (a->end_k-a->start_k)*sz, a->scale + a->start_k, sz);
     }else if (a->relu==1){
@@ -281,7 +280,7 @@ sss=(sw*sh*1)     (conv_out_spatial_dim)=(w1*h1)=sz
 
 void *conv3_s1_thread(void *arg){ // for kernel nxnx1
     ARG *a=(ARG *)arg;
-    
+
     int sw=a->size[2], sh=a->size[3], sd=a->size[1], k=a->size[0];
     int sss=sw*sh*sd, ss=sw*sh;
     int sz=a->w1*a->h1;
@@ -301,7 +300,7 @@ void *conv3_s1_thread(void *arg){ // for kernel nxnx1
                     im2col_buf + g*sz*ss, sz, a->filter + g*ss , 1, (float)1.0,
                     a->out->data + g*sz, 1);
     }
-    
+
     if (a->bn && a->relu){
         relu_bn(a->out->data + sz * a->start_k, (a->end_k-a->start_k)*sz, a->scale + a->start_k, sz);
     }else if (a->relu==1){
@@ -333,11 +332,11 @@ void *conv3_1x1_thread(void *arg){ // for only kernel 1x1
 #else
     float *fl[a->end_k];
 #endif
-    
+
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,a->end_k-a->start_k,sz,sd,
                 (float)1.0,   a->filter+a->start_k*sd ,sd, a->in->data, sz, (float)1.0,
                 a->out->data+a->start_k*sz, sz);
-    
+
     if (a->bn && a->relu){
         relu_bn(a->out->data + sz * a->start_k, (a->end_k-a->start_k)*sz, a->scale + a->start_k, sz);
     }else if (a->relu==1){
@@ -359,7 +358,7 @@ void *conv3_1x1_thread(void *arg){ // for only kernel 1x1
 
 void *conv3_thread_old(void *arg){ // for kernel over 2x2
     ARG *a=(ARG *)arg;
-    
+
     int sw=a->size[2], sh=a->size[3], sd=a->size[1], k=a->size[0];
     int sss=sw*sh*sd, ss=sw*sh;
     int sz=a->w1*a->h1;
@@ -372,7 +371,7 @@ void *conv3_thread_old(void *arg){ // for kernel over 2x2
     float *fl[a->end_k];
 #endif
     int ok=0,ng=0;
-    
+
     for(d=0;d<sd;d++){
         ptr_in = a->in->data + off * d;
         for(kn=a->start_k;kn<a->end_k;kn++){
@@ -402,7 +401,7 @@ void *conv3_thread_old(void *arg){ // for kernel over 2x2
                                 //           THDoubleVector_add(ptr_out[kn],fl[kn]+of,*ptr_in0);
                                 // sz->kn  -- modify --> kn->sz..ptr_out§¨œ¢¬≥§À§ §Î°•
                                 // fl[kn] --> kn -> ss*d -> fl[kn] §¨œ¢¬≥§À§ §Î°•
-                                
+
 #endif
                             }
                         }
@@ -413,10 +412,10 @@ void *conv3_thread_old(void *arg){ // for kernel over 2x2
             }
         }
     }
-    
+
     //  float *pt = ptr_out[a->start_k];
     //  printf("%.5f %.5f (%d,%d)\n",*pt,pt[1],ok,ng);
-    
+
     if (a->bn && a->relu){
         relu_bn(a->out->data + sz * a->start_k, (a->end_k-a->start_k)*sz, a->scale + a->start_k, sz);
     }else if (a->relu==1){
@@ -438,7 +437,7 @@ void *conv3_thread_old(void *arg){ // for kernel over 2x2
 
 void *conv3_s1_thread_old(void *arg){ // for kernel nxnx1
     ARG *a=(ARG *)arg;
-    
+
     int sw=a->size[2], sh=a->size[3], sd=a->size[1], k=a->size[0];
     int sss=sw*sh*sd, ss=sw*sh;
     int sz=a->w1*a->h1;
@@ -450,7 +449,7 @@ void *conv3_s1_thread_old(void *arg){ // for kernel nxnx1
 #else
     float *fl;
 #endif
-    
+
     //for(d=0;d<sd;d++){  sd=1
     //  ptr_in = a->in->data + off * d;
     for(kn=a->start_k;kn<a->end_k;kn++){
@@ -482,7 +481,7 @@ void *conv3_s1_thread_old(void *arg){ // for kernel nxnx1
             }
         }
     }
-    
+
     if (a->bn && a->relu){
         relu_bn(a->out->data + sz * a->start_k, (a->end_k-a->start_k)*sz, a->scale + a->start_k, sz);
     }else if (a->relu==1){
@@ -504,7 +503,7 @@ void *conv3_s1_thread_old(void *arg){ // for kernel nxnx1
 
 void *conv3_1x1_thread_old(void *arg){ // for only kernel 1x1
     ARG *a=(ARG *)arg;
-    
+
     int sw=a->size[2], sh=a->size[3], sd=a->size[1], k=a->size[0];
     int sz=a->w1*a->h1;
     int off=a->in->h * a->in->w;
@@ -516,7 +515,7 @@ void *conv3_1x1_thread_old(void *arg){ // for only kernel 1x1
     float *fl[a->end_k];
 #endif
     int ok=0,ng=0;
-    
+
     ptr_in = a->in->data;
     for(d=0;d<sd;d++){
         //ptr_in = a->in->data + off * d;
@@ -546,7 +545,7 @@ void *conv3_1x1_thread_old(void *arg){ // for only kernel 1x1
     }
     //  float *pt = ptr_out[a->start_k];
     //  printf("%.5f %.5f (%d,%d)\n",*pt,pt[1],ok,ng);
-    
+
     if (a->bn && a->relu){
         relu_bn(a->out->data + sz * a->start_k, (a->end_k-a->start_k)*sz, a->scale + a->start_k, sz);
     }else if (a->relu==1){
@@ -579,7 +578,7 @@ void *conv3_gemm(void *arg){ // for only kernel 1x1
 #else
     float *fl[a->end_k];
 #endif
-    
+
 #if 0
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,a->end_k-a->start_k,a->w1*a->h1,sss,
                 (float)1.0, a->filter+a->start_k*sss ,sss, im2col_buf, sz, (float)0,
@@ -590,13 +589,13 @@ void *conv3_gemm(void *arg){ // for only kernel 1x1
     ----                     -----
     sss=(sw*sh*sd)     (conv_out_spatial_dim)=(w1*h1)=sz
 #endif
-    
+
     int kn=a->end_k - a->start_k;
-    
+
     float *out=a->out->data + a->start_k*sz;
     float *ptr0 = a->filter + a->start_k*sss;
     float *ptr1 = im2col_buf;
-    
+
     for(y=0;y<kn;y++){
         for(x=0;x<sz;x++){
             *out=0;
@@ -608,7 +607,7 @@ void *conv3_gemm(void *arg){ // for only kernel 1x1
         ptr0+=sss;
         ptr1++;
     }
-    
+
     if (a->bn && a->relu){
         relu_bn(a->out->data + sz * a->start_k, (a->end_k-a->start_k)*sz, a->scale + a->start_k, sz);
     }else if (a->relu==1){
@@ -676,131 +675,6 @@ void im2col(Ten *in,int sw,int sh,int sd,int w1,int h1,int *stride,int *pad)
 }
 
 
-///////////////////////////////////////////////////////////////////////////////
-/*
- conv.get_deconv_outsize(h, kh, self.sy, self.ph)
- def get_deconv_outsize(size, k, s, p, cover_all=False):
- if cover_all:
- return s * (size - 1) + k - s + 1 - 2 * p
- else:
- return s * (size - 1) + k - 2 * p
- 
- void col2im(Ten *in, int sw,int sh,int sd,int w1,int h1,int *stride,int *pad)
- // Dtype* data_col, const int channels,
- //        const int height, const int width, const int kernel_h, const int kernel_w,
- //        const int pad_h, const int pad_w,
- //        const int stride_h, const int stride_w,
- //        const int dilation_h, const int dilation_w,
- //        Dtype* data_im) {
- const int output_h = (height + 2 * pad_h -
- (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
- const int output_w = (width + 2 * pad_w -
- (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
- 
- const int channel_size = height * width;
- for (int channel = channels; channel--; data_im += channel_size) {
- for (int kernel_row = 0; kernel_row < kernel_h; kernel_row++) {
- for (int kernel_col = 0; kernel_col < kernel_w; kernel_col++) {
- int input_row = -pad_h + kernel_row * dilation_h;
- for (int output_rows = output_h; output_rows; output_rows--) {
- if (!is_a_ge_zero_and_a_lt_b(input_row, height)) {
- data_col += output_w;
- } else {
- int input_col = -pad_w + kernel_col * dilation_w;
- for (int output_col = output_w; output_col; output_col--) {
- if (is_a_ge_zero_and_a_lt_b(input_col, width)) {
- data_im[input_row * width + input_col] += *data_col;
- }
- data_col++;
- input_col += stride_w;
- }
- }
- input_row += stride_h;
- }
- }
- }
- }
- }
- 
- template <typename Dtype>
- void BaseConvolutionLayer<Dtype>::backward_cpu_gemm(const Dtype* output,
- const Dtype* weights, Dtype* input) {
- Dtype* col_buff = col_buffer_.mutable_cpu_data();
- if (is_1x1_) {
- col_buff = input;
- }
- for (int g = 0; g < group_; ++g) {
- caffe_cpu_gemm<Dtype>(CblasTrans, CblasNoTrans, kernel_dim_,
- conv_out_spatial_dim_, conv_out_channels_ / group_,
- (Dtype)1., weights + weight_offset_ * g, output + output_offset_ * g,
- (Dtype)0., col_buff + col_offset_ * g);
- }
- if (!is_1x1_) {
- conv_col2im_cpu(col_buff, input);
- }
- }
- 
- 
- template <typename Dtype>
- void BaseConvolutionLayer<Dtype>::weight_cpu_gemm(const Dtype* input,
- const Dtype* output, Dtype* weights) {
- const Dtype* col_buff = input;
- if (!is_1x1_) {
- conv_im2col_cpu(input, col_buffer_.mutable_cpu_data());
- col_buff = col_buffer_.cpu_data();
- }
- for (int g = 0; g < group_; ++g) {
- caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasTrans, conv_out_channels_ / group_,
- kernel_dim_, conv_out_spatial_dim_,
- (Dtype)1., output + output_offset_ * g, col_buff + col_offset_ * g,
- (Dtype)1., weights + weight_offset_ * g);
- }
- }
- template <typename Dtype>
- void BaseConvolutionLayer<Dtype>::forward_cpu_bias(Dtype* output,
- const Dtype* bias) {
- caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, num_output_,
- out_spatial_dim_, 1, (Dtype)1., bias, bias_multiplier_.cpu_data(),
- (Dtype)1., output);
- }
- 
- template <typename Dtype>
- void BaseConvolutionLayer<Dtype>::backward_cpu_bias(Dtype* bias,
- const Dtype* input) {
- caffe_cpu_gemv<Dtype>(CblasNoTrans, num_output_, out_spatial_dim_, 1.,
- input, bias_multiplier_.cpu_data(), 1., bias);
- }
- 
- for (int g = 0; g < group_; ++g) {
- caffe_cpu_gemm<Dtype>(CblasTrans, CblasNoTrans, kernel_dim_,
- conv_out_spatial_dim_, conv_out_channels_ / group_,
- (Dtype)1., weights + weight_offset_ * g, output + output_offset_ * g,
- (Dtype)0., col_buff + col_offset_ * g);
- }
- ----------------
- 
- if (!is_1x1_) {
- conv_col2im_cpu(col_buff, input);
- 
- void DeconvolutionLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
- const vector<Blob<Dtype>*>& top) {
- const Dtype* weight = this->blobs_[0]->cpu_data();
- for (int i = 0; i < bottom.size(); ++i) {
- const Dtype* bottom_data = bottom[i]->cpu_data();
- Dtype* top_data = top[i]->mutable_cpu_data();
- for (int n = 0; n < this->num_; ++n) {
- this->backward_cpu_gemm(bottom_data + n * this->bottom_dim_, weight,
- top_data + n * this->top_dim_);
- if (this->bias_term_) {
- const Dtype* bias = this->blobs_[1]->cpu_data();
- this->forward_cpu_bias(top_data + n * this->top_dim_, bias);
- }
- }
- }
- }
- */
-///////////////////////////////////////////////////////////////////////////////
-
 #if CODEBOOK
 Ten *conv2(Ten *in,int *size,int *stride,int *pad,unsigned char *filter,float *bias,float *codebook,int relu)
 #else
@@ -818,7 +692,7 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
     int off=in->h * in->w;
     int kn,i,j,x,y,d,yi,xi,h,w,c;
     pthread_t thread[max_core];
-    
+
 #if DEBUG
     static double num_comp=0, num_weights=0;
     double n_comp = sss*k*w1*h1;
@@ -826,7 +700,7 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
     num_comp += n_comp;
     num_weights += n_weights;
 #endif
-    
+
     //   int max_h= in->h -sh+1, max_w= in->w -sw+1;
     //   Ten *out=(Ten *)malloc(sizeof(Ten));
     Ten *out=in->old;
@@ -834,12 +708,12 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
     out->old=in;
     //   out->data=(float *)malloc(sizeof(float)*w1*h1*d1);
     //   out->data=in->data_out;
-    
+
     //   printf("in:%x out:%x\n",in->data,out->data);
-    
+
     if (pr) printf("  ### in->data[0]=%.5f in->data[last]=%.5f\n", in->data[0], in->data[in->d*off-1]);
     if (pr) printf("  ### filter[0]=%.5f filter[last]=%.5f\n", filter[0], filter[sss*k-1]);
-    
+
 #if DEBUG
     if (max_memory<w1*h1*d1) {
         fprintf(stderr,"Reserved memory is not enough.\n");
@@ -851,7 +725,7 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
 #endif
     bzero(out->data,sizeof(float)*w1*h1*d1);
     //    memset(out->data,  0, sizeof(float)*w1*h1*d1);
-    
+
     if (max_blas){
         float *fp=out->data;
         for(d=0;d<d1;d++)
@@ -859,14 +733,14 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
                 for(h=0;h<h1;h++)
                     *fp++ = bias[d];
     }
-    
-    
+
+
 #if CODEBOOK
     ARG arg={w1,h1,d1,size,pad,stride,filter,codebook,bias,in,out,0,0,relu};
 #else
     ARG arg={w1,h1,d1,size,pad,stride,filter,bias,in,out,0,0,relu,scale,bn};
 #endif
-    
+
 #if DEBUG
     //     if (pr) printf("      ");
     if (sw==1 && sh==1 && stride[0]==1 && stride[1]==1 && pad[0]==0 && pad[2]==0) {
@@ -879,12 +753,12 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
     if (pr) printf("comp: %.0f, weights: %.0f\n",n_comp,n_weights);
     if (pr) printf("acc. comp: %.0f, acc. weights: %.0f\n",num_comp,num_weights);
 #endif
-    
+
 #if NO_THREAD
     im2col(in,sw,sh,sd,w1,h1,stride,pad);
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,k,w1*h1,sss,
                 (float)1.0, filter ,sss, im2col_buf, w1*h1, (float)1, out->data, w1*h1);
-    
+
     if (relu==1){
         float *ptr=out->data;
         for(kn=0;kn<k*w1*h1;kn++){
@@ -897,11 +771,11 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
     return out;
 #endif
     int ncore=max_core;
-    
+
     if(k<ncore){
         ncore=k;
     }
-    
+
     ARG a[ncore];
     static int total=0;
     if (!total)
@@ -913,7 +787,7 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
         a[d].end_k  = a[d].start_k + (int)((double)k*ratio[d]/total+0.99);
         a[d].end_k  = (a[d].end_k<k)?a[d].end_k:k;
     }
-    
+
     for(d=0;d<ncore;d++){
 #if DEBUG
         if (pr) printf("%s[%d]:%d-%d",str,d+1,a[d].start_k,a[d].end_k);
@@ -933,13 +807,13 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
             //else      pthread_create(&thread[d],NULL,conv3_gemm,(void *)&a[d]);
         }
     }
-    
+
     for(d=0;d<ncore;d++){
         pthread_join(thread[d], NULL);
     }
     //   free(in->data);
     //   free(in);
-    
+
 #if 0
     float *ptr=in->data;
     for(i=0;i<in->h*in->w*in->d;i++){
@@ -947,7 +821,7 @@ Ten *conv2(Ten *in,int *size,int *stride,int *pad,float *filter,float *bias,floa
         ptr++;
     }
 #endif
-    
+
     return out;
 }
 
@@ -957,15 +831,15 @@ Ten *fc(Ten *in,int *size,float *weight,float *bias,float *scale,int relu,int bn
     int conv_size[4]={k,sd,1,1};
     int stride[2]={1, 1};
     int pad[4]={0,0,0,0};
-    
-    
+
+
     if (in->d != sd) {
         ss=(int)(sqrt(sd / in->d));
         conv_size[3]=ss;
         conv_size[2]=ss;
         conv_size[1]=in->d;
     }
-    
+
     return conv2(in,conv_size,stride,pad,weight,bias,scale,relu,bn);
 }
 
@@ -997,7 +871,7 @@ Ten *pool(Ten *in,const char *type,int *size,int *stride,int *pad)
     }
 #endif
     bzero(out->data,sizeof(float)*w1*h1*d1);
-    
+
     if (!strncasecmp(type,"AV",2)){  // average pooling
 #if DEBUG
         if (pr) printf("     Average pooling\n");
@@ -1096,11 +970,11 @@ Ten *DCNN_dummy(Ten *in)
 
 // UIImage -> IplImage変換
 - (IplImage*)IplImageFromUIImage:(UIImage*)image {
-    
+
     CGImageRef imageRef = image.CGImage;
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     IplImage *iplimage = cvCreateImage(cvSize(image.size.width,image.size.height), IPL_DEPTH_8U, 4);
-    
+
     CGContextRef contextRef = CGBitmapContextCreate(
                                                     iplimage->imageData,
                                                     iplimage->width,
@@ -1112,20 +986,20 @@ Ten *DCNN_dummy(Ten *in)
     CGContextDrawImage(contextRef,
                        CGRectMake(0, 0, image.size.width, image.size.height),
                        imageRef);
-    
+
     CGContextRelease(contextRef);
     CGColorSpaceRelease(colorSpace);
-    
+
     IplImage *ret = cvCreateImage(cvGetSize(iplimage), IPL_DEPTH_8U, 3);
     cvCvtColor(iplimage, ret, CV_RGB2BGR);
     cvReleaseImage(&iplimage);
-    
+
     return ret;
 }
 
 // IplImage -> UIImage変換
 - (UIImage*)UIImageFromIplImage:(IplImage*)image {
-    
+
     CGColorSpaceRef colorSpace;
     if (image->nChannels == 1)
     {
@@ -1151,11 +1025,11 @@ Ten *DCNN_dummy(Ten *in)
                                         kCGRenderingIntentDefault
                                         );
     UIImage *ret = [UIImage imageWithCGImage:imageRef];
-    
+
     CGImageRelease(imageRef);
     CGDataProviderRelease(provider);
     CGColorSpaceRelease(colorSpace);
-    
+
     return ret;
 }
 
@@ -1173,13 +1047,13 @@ Ten *DCNN_dummy(Ten *in)
             break;
         }
     }
-    
+
     //  couldn't find one on the front, so just get the default video device.
     if ( ! captureDevice)
     {
         captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     }
-    
+
     return captureDevice;
 }
 /*----カメラ切り替え(バック)----*/
@@ -1196,52 +1070,52 @@ Ten *DCNN_dummy(Ten *in)
             break;
         }
     }
-    
+
     //  couldn't find one on the front, so just get the default video device.
     if ( ! captureDevice)
     {
         captureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     }
-    
+
     return captureDevice;
 }
 
 - (void)setupAVCapture
 {
     NSError *error = nil;
-    
+
     // 入力と出力からキャプチャーセッションを作成
     self.session = [[AVCaptureSession alloc] init];
-    
+
     self.session.sessionPreset = AVCaptureSessionPresetMedium;
-    
+
     // カメラからの入力を作成
     AVCaptureDevice *camera = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
 
-    
+
     // カメラからの入力を作成し、セッションに追加
     self.videoInput = [AVCaptureDeviceInput deviceInputWithDevice:camera error:&error];
     [self.session addInput:self.videoInput];
-    
+
     // 画像への出力を作成し、セッションに追加
     self.videoDataOutput = [[AVCaptureVideoDataOutput alloc] init];
     [self.session addOutput:self.videoDataOutput];
-    
+
     // ビデオ出力のキャプチャの画像情報のキューを設定
     dispatch_queue_t queue = dispatch_queue_create("myQueue", NULL);
     [self.videoDataOutput setAlwaysDiscardsLateVideoFrames:TRUE];
     [self.videoDataOutput setSampleBufferDelegate:self queue:queue];
-    
+
     // ビデオへの出力の画像は、BGRAで出力
     self.videoDataOutput.videoSettings = @{
                                            (id)kCVPixelBufferPixelFormatTypeKey : [NSNumber numberWithInt:kCVPixelFormatType_32BGRA]
                                            };
-    
+
     // ビデオ入力のAVCaptureConnectionを取得
     AVCaptureConnection *videoConnection = [self.videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
-    
+
     videoConnection.videoMinFrameDuration = CMTimeMake(1,2);
-    
+
     [self.session startRunning];
 }
 
@@ -1259,77 +1133,15 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
     dispatch_async(dispatch_get_main_queue(), ^{
 
-        
+
 
         NSDate *start = [NSDate date];
-        
         IplImage *im, *im2;
         IplImage *im0 = [self IplImageFromUIImage:image];
-        
-        //        if (im0 == NULL) {
-        //            fprintf(stderr,"file open error!!\n");
-        //            exit(1);
-        //        }else{
-        //            printf("file image OK\n");
-        //        }
-        
         int i,x,y,sx,sy,offx=0,offy=0,offx2=0,offy2=0,ss,aoff=1;
         int size=0,ssize=0;
         int top=10;
-        //         char *wei=NULL;
-        
-        //         if(argc<2+aoff){
-        //             fprintf(stderr,"%s {img-name} {out img-name} {-p} {-w (weights)} {-s (size of long-side)}\n",argv[0]);
-        //             return 1;
-        //         }
-        //         if (argc>=3+aoff && !strcmp(argv[2+aoff],"-p")) { pr=1; aoff++; }
-        //         if (argc>=4+aoff && !strcmp(argv[2+aoff],"-w")) {
-        //             //    size=atoi(argv[3+aoff]);
-        //             wei=argv[3+aoff]; aoff+=2;
-        //             fprintf(stderr,"weights:%s\n",wei);
-        //         }
-        //         if (argc>=4+aoff && !strcmp(argv[2+aoff],"-s")) {
-        //             size=atoi(argv[3+aoff]); aoff+=2;
-        //             fprintf(stderr,"resize size:%d\n",size);
-        //         }
-        //
-        //
-        //         im0=cvLoadImage(argv[1],1);
-        //         if (im0 == NULL) {
-        //             fprintf(stderr,"file open error!! (%s)\n",argv[1]);
-        //             exit(1);
-        //         }
         size=400;
-        
-        //        if (size)
-        //            if (im0->width < im0->height){
-        //                // if (ssize) sy=ssize; else
-        //                sy=size;
-        //                sx=sy*im0->width/im0->height;
-        //            }else{
-        //                // if (ssize) sx=ssize; else
-        //                sx=size;
-        //                sy=sx*im0->height/im0->width;
-        //            }
-        //            else{
-        //                sx=im0->width;
-        //                sy=im0->height;
-        //            }
-        //        im2 = cvCreateImage(cvSize(sx,sy),IPL_DEPTH_8U, 3);
-        //
-        //
-        //        fprintf(stderr,"%d %d -> %d %d\n",im0->width,im0->height,im->width,im->height);
-        //        cvResize(im0,im2,CV_INTER_CUBIC);
-        
-        //        if (im2 == NULL) {
-        //            fprintf(stderr,"file open error!!\n");
-        //            exit(1);
-        //        }else{
-        //            printf("file name im OK\n");
-        //        }
-        
-        //         UIImage *image01=[self UIImageFromIplImage:im];
-        //         UIImageWriteToSavedPhotosAlbum(image01,self,nil,nil);
         static Ten *input=NULL;
         static Ten *input2=NULL;
         if (!input){
@@ -1343,10 +1155,10 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             im2col_buf=(float *)malloc(sizeof(float)*max_memory_im2col);
             input2=(Ten *)malloc(sizeof(Ten));
         }
-        
+
         input->h=im0->height;
         input->w=im0->width;
-        
+
         input->d=3;
         ssize=input->h * input->w;
         //        printf("ssize: %d\n",ssize);
@@ -1367,20 +1179,12 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         input2->h=1;
         input2->d=32;
         input2->data=tmp;
-        //        float *test=input2->data;
-        //        for(int i=0;i<input2->d;i++){
-        //            printf("データ: %f", *test);
-        //            *test++;
-        //        }
-        
+
         char *p;
 
-        
-        
+
+
         Ten *out=DCNN(input,input2);
-        //           Ten *out=DCNN_dummy(input);
-        //         Ten *out = input;
-        
         /*計測処理終了*/
         NSTimeInterval time = -[start timeIntervalSinceNow];
         NSLog(@"%lf\n", time);
@@ -1388,7 +1192,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         fprintf(stderr,"output image: %d x %d x %d\n",out->w,out->h,out->d);
         //
         im=cvCreateImage(cvSize(out->w,out->h),IPL_DEPTH_8U, 3);
-        
+
         ssize=out->h * out->w;
         ptr_r=out->data;
         ptr_g=ptr_r + ssize;
@@ -1407,7 +1211,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                 cvSet2D(im,y,x,s);
             }
         }
-        
+
         printf("%d\n", color_prev);
         //        color preserving mode
         if (color_prev) {
@@ -1431,7 +1235,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             cb2=cvCreateImage(cvSize(out->w,out->h),IPL_DEPTH_8U, 1);
             cr2=cvCreateImage(cvSize(out->w,out->h),IPL_DEPTH_8U, 1);
             cvSplit(out0,y2,cb2,cr2,NULL);
-            
+
             cvMerge(y2,cb1,cr1,NULL,out0);
             //            CV_YCrCb -> RGB
             //            cvCvtColor(out0,im,CV_YCrCb2RGB);
@@ -1439,17 +1243,17 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         }else{
             printf("not color\n");
         }
-        
-        
+
+
         image_result1=[self UIImageFromIplImage:im];
-        
+
         self.previewView.image = image_result1;
 
-        
+
 #ifdef DEBUG
         if (pr) printf("-------------------------\n");
 #endif
-        
+
 #if 0
         int s=out->w * out->h * out->d;
         IDX *idx=(IDX *)malloc(sizeof(IDX)*s);
@@ -1464,9 +1268,9 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         qsort(idx,s,sizeof(IDX),IDX_sort);
         for(i=0;i<top;i++)
             printf("%d %s %.5f\n",idx[i].idx,foodname[idx[i].idx],idx[i].v);
-        
+
         free(idx);
-        
+
         free(out->old2->data);
         free(out->old2);
         free(out->old->data);
@@ -1482,20 +1286,20 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 - (UIImage *)imageFromSampleBuffer:(CMSampleBufferRef)sampleBuffer
 {
     CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
-    
+
     // ピクセルバッファのベースアドレスをロックする
     CVPixelBufferLockBaseAddress(imageBuffer, 0);
-    
+
     // Get information of the image
     uint8_t *baseAddress = (uint8_t *)CVPixelBufferGetBaseAddressOfPlane(imageBuffer, 0);
-    
+
     size_t bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer);
     size_t width = CVPixelBufferGetWidth(imageBuffer);
     size_t height = CVPixelBufferGetHeight(imageBuffer);
-    
+
     // RGBの色空間
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    
+
     CGContextRef newContext = CGBitmapContextCreate(baseAddress,
                                                     width,
                                                     height,
@@ -1503,15 +1307,15 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                                                     bytesPerRow,
                                                     colorSpace,
                                                     kCGBitmapByteOrder32Little | kCGImageAlphaPremultipliedFirst);
-    
+
     CGImageRef cgImage = CGBitmapContextCreateImage(newContext);
-    
+
     CGContextRelease(newContext);
     CGColorSpaceRelease(colorSpace);
     CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
-    
+
     UIImage *image = [UIImage imageWithCGImage:cgImage scale:1.0 orientation:UIImageOrientationUp];
-    
+
     //300x300: 200ms
     //400x400: 350ms
     CGFloat width_1 = width_1_tmp;  // リサイズ後幅のサイズ
@@ -1520,10 +1324,10 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     [image drawInRect:CGRectMake(0, 0, width_1, height_1)];
     image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
-    
-    
+
+
     CGImageRelease(cgImage);
-    
+
     return image;
 }
 UIImage *image_result1;
@@ -1711,23 +1515,6 @@ float tmp12[]={0, 0, 0, 0,0, 0, 0,
     color_prev=false;
 }
 
-
-//int change_count=1;
-//
-//bool frontCamera = false;
-//- (IBAction)set_camera_device:(id)sender {
-//    frontCamera=true;
-//    //    if(change_count%2==0){
-//    //        frontCamera = false;
-//    //        printf("false\n");
-//    //    }else{
-//    //        frontCamera = true;
-//    //                printf("true\n");
-//    //    }
-//    //    printf("%d \n", change_count%2);
-//    //    ++change_count;
-//}
-//
 - (IBAction)reset:(id)sender {
     //    スライド値(重み)リセット用
     self.weight_select1.value=0;
@@ -1762,21 +1549,6 @@ float tmp12[]={0, 0, 0, 0,0, 0, 0,
     self.weight_select30.value=0;
     self.weight_select31.value=0;
     self.weight_select32.value=0;
-//    self.weight_select14.value=0;
-//    self.weight_value1.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value2.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value3.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value4.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value5.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value6.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value7.text=[NSString stringWithFormat:@"%.2f", 1.00];
-//    self.weight_value8.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value9.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value10.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value11.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value12.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value13.text=[NSString stringWithFormat:@"%.2f", 0.00];
-//    self.weight_value14.text=[NSString stringWithFormat:@"%.2f", 0.00];
 
     for(int i=0; i<STYLENUM; i++){
         if(i==17){
@@ -1915,18 +1687,8 @@ float tmp12[]={0, 0, 0, 0,0, 0, 0,
                         self.weight_value32.text=[NSString stringWithFormat:@"%.2f", d];
             self.weight_select32.value=d;
         }
-        /*
-         else if(i==13){
-         self.weight_value14.text=[NSString stringWithFormat:@"%.2f", d];
-         self.weight_select14.value=d;
-         }*/
     }
 }
-
-//- (IBAction)Stripe:(id)sender {
-//    partial=true;
-//}
-
 
 - (IBAction)weight_select14:(id)sender {
     for(int i=0; i<STYLENUM; i++){
@@ -2080,7 +1842,4 @@ float tmp12[]={0, 0, 0, 0,0, 0, 0,
     }
     self.weight_value32.text=[NSString stringWithFormat:@"%.2f", self.weight_select13.value];
 }
-//- (IBAction)color:(id)sender {
-//}
 @end
-
